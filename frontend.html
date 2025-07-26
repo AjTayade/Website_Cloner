@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Advanced Website Scraper & Remixer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .hidden { display: none; }
+    .url-entry:not(:last-child) { border-bottom: 1px solid #374151; }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex flex-col min-h-screen">
+
+  <header class="bg-gray-800/50 backdrop-blur-sm border-b border-gray-700 p-4 shadow-lg sticky top-0 z-20">
+    <div class="max-w-5xl mx-auto">
+      <h1 class="text-2xl font-bold text-white">Advanced Website Scraper & Remixer</h1>
+      <p id="header-subtitle" class="text-sm text-gray-400">
+        Step 1: Define the pages you want to clone.
+      </p>
+    </div>
+  </header>
+
+  <main class="flex-grow w-full max-w-5xl mx-auto p-4 md:p-6 relative">
+
+    <div id="toast" class="hidden fixed top-5 right-5 bg-red-600 text-white py-2 px-5 rounded-lg shadow-xl text-sm z-50">
+      <p id="toast-message"></p>
+    </div>
+
+    <section id="stage-1-input">
+      <div class="bg-gray-800 rounded-lg shadow-md">
+        <div id="url-list" class="p-4 space-y-3">
+          </div>
+        <div class="p-4 bg-gray-700/50 rounded-b-lg flex justify-between items-center">
+          <button id="add-page-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-md transition-all text-sm">
+            + Add Page
+          </button>
+          <button id="start-scraping-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-md transition-all">
+            Start Scraping
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-2-progress" class="hidden">
+      <div class="bg-gray-800 rounded-lg shadow-md p-8 text-center relative">
+        <h2 id="progress-title" class="text-xl font-semibold text-white mb-4">Scraping & Compiling…</h2>
+        <p id="progress-subtitle" class="text-gray-400 mb-6">This may take a few moments. Please wait.</p>
+        <div class="w-full bg-gray-700 rounded-full h-2.5">
+          <div id="progress-bar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-500" style="width:0%"></div>
+        </div>
+        <div id="step2-error-text" class="text-red-400 text-md mt-8"></div>
+        <button id="retry-btn" class="hidden mt-4 bg-gray-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-md transition-all">
+          &larr; Back to Input
+        </button>
+      </div>
+    </section>
+
+    <section id="stage-3-output" class="hidden space-y-4">
+      <div class="bg-gray-800 rounded-lg shadow-md p-4">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div class="flex-grow">
+            <h2 class="text-xl font-semibold text-white">Scraping Complete!</h2>
+            <p class="text-gray-400 text-sm">Browse files, preview, or download the project.</p>
+          </div>
+          <div class="flex gap-2">
+             <button id="back-btn" class="w-full md:w-auto bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-md transition-all">
+              Start Over
+            </button>
+            <button id="download-zip-btn" class="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-md transition-all disabled:bg-gray-700 disabled:cursor-not-allowed" disabled>
+              Download ZIP
+            </button>
+          </div>
+        </div>
+        <div id="ai-modify-section" class="pt-4 mt-4 border-t border-gray-700">
+          <div class="flex flex-col md:flex-row md:items-end gap-3">
+            <div class="flex-grow">
+              <label for="prompt-input" class="block text-sm font-medium text-gray-300 mb-1">AI Modification Prompt</label>
+              <input id="prompt-input" class="w-full bg-gray-900 border border-gray-600 rounded-md p-2 text-white focus:ring-2 focus:ring-teal-500" placeholder="e.g. “Translate the text on this page to French”">
+            </div>
+            <button id="modify-btn" class="w-full md:w-auto bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-6 rounded-md transition-all flex items-center justify-center">
+              <svg id="modify-loader" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 0 1 4 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Modify with AI</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="flex flex-col md:flex-row gap-4">
+        <div class="bg-gray-800 rounded-lg shadow-md md:w-1/3 overflow-auto" style="max-height:30rem">
+          <h3 class="px-4 py-2 border-b border-gray-700 font-semibold text-white sticky top-0 bg-gray-800">Project Files</h3>
+          <ul id="file-list" class="text-sm divide-y divide-gray-700"></ul>
+        </div>
+        <div class="bg-gray-800 rounded-lg shadow-md flex-1 flex flex-col">
+          <div id="preview-header" class="px-4 py-2 border-b border-gray-700 font-mono text-sm text-gray-400 truncate"></div>
+          <iframe id="preview-iframe" class="w-full h-full rounded-b-lg bg-white"></iframe>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script>
+    // --- UI/UI state refs ---
+    const stage1 = document.getElementById('stage-1-input');
+    const stage2 = document.getElementById('stage-2-progress');
+    const stage3 = document.getElementById('stage-3-output');
+    const headerSubtitle = document.getElementById('header-subtitle');
+    const urlList = document.getElementById('url-list');
+    const addPageBtn = document.getElementById('add-page-btn');
+    const startScrapingBtn = document.getElementById('start-scraping-btn');
+    const progressBar = document.getElementById('progress-bar');
+    const progressTitle = document.getElementById('progress-title');
+    const progressSubtitle = document.getElementById('progress-subtitle');
+    const downloadZipBtn = document.getElementById('download-zip-btn');
+    const fileListUl = document.getElementById('file-list');
+    const previewIframe = document.getElementById('preview-iframe');
+    const previewHeader = document.getElementById('preview-header');
+    const promptInput = document.getElementById('prompt-input');
+    const modifyBtn = document.getElementById('modify-btn');
+    const modifyLoader = document.getElementById('modify-loader');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toast-message');
+    const retryBtn = document.getElementById('retry-btn');
+    const backBtn = document.getElementById('back-btn');
+    const step2ErrorText = document.getElementById('step2-error-text');
+    
+    // --- App state ---
+    let currentZip = null;
+    let currentBlob = null;
+    let activeHtmlFile = null;
+    let lastZipName = "website_clone.zip";
+
+    // --- Core Functions ---
+    const showError = (msg, isFatal = false) => {
+      if (isFatal) {
+        // Show error in the main progress view
+        progressTitle.textContent = 'An Error Occurred';
+        step2ErrorText.textContent = msg;
+        retryBtn.classList.remove('hidden');
+        progressBar.parentElement.classList.add('hidden');
+      } else {
+        // Show a temporary toast notification for non-fatal errors
+        toastMessage.textContent = msg;
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 3000);
+      }
+    };
+
+    const clearError = () => {
+      step2ErrorText.textContent = "";
+      retryBtn.classList.add('hidden');
+      progressBar.parentElement.classList.remove('hidden');
+    };
+
+    const setProgress = (pct, title = 'Scraping & Compiling…', subtitle = 'This may take a few moments. Please wait.') => {
+        progressBar.style.width = pct + '%';
+        progressTitle.textContent = title;
+        progressSubtitle.textContent = subtitle;
+    };
+
+    const setModifyLoading = (isLoading) => {
+      modifyBtn.disabled = isLoading;
+      promptInput.disabled = isLoading;
+      if (isLoading) {
+        modifyLoader.classList.remove('hidden');
+        modifyBtn.querySelector('span').textContent = 'Processing…';
+      } else {
+        modifyLoader.classList.add('hidden');
+        modifyBtn.querySelector('span').textContent = 'Modify with AI';
+      }
+    };
+
+    const goToStage = (stageNum) => {
+      stage1.classList.add('hidden');
+      stage2.classList.add('hidden');
+      stage3.classList.add('hidden');
+      if (stageNum === 1) {
+        stage1.classList.remove('hidden');
+        headerSubtitle.textContent = "Step 1: Define the pages you want to clone.";
+        currentZip = null;
+        currentBlob = null;
+        activeHtmlFile = null;
+        downloadZipBtn.disabled = true;
+        promptInput.value = '';
+      } else if (stageNum === 2) {
+        stage2.classList.remove('hidden');
+        headerSubtitle.textContent = 'Step 2: Sending job to server…';
+      } else if (stageNum === 3) {
+        stage3.classList.remove('hidden');
+        headerSubtitle.textContent = 'Step 3: Browse, modify, or download.';
+      }
+    };
+
+    // ------- Stage 1 Logic -----
+    const addPageEntryRow = (title = '', url = '') => {
+      const entry = document.createElement('div');
+      entry.className = 'url-entry flex items-center space-x-3 pb-3 animate-fade-in';
+      entry.innerHTML = `
+        <input type="text" value="${title}" class="page-title-input w-1/3 bg-gray-900 border border-gray-600 rounded-md p-2 text-white focus:ring-2 focus:ring-indigo-500" placeholder="Page Title (e.g. Home)">
+        <input type="url" value="${url}" class="page-url-input flex-grow bg-gray-900 border border-gray-600 rounded-md p-2 text-white focus:ring-2 focus:ring-indigo-500" placeholder="https://example.com">
+        <button class="remove-page-btn text-gray-400 hover:text-red-500 transition-colors p-2" title="Remove Page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3m5 0H4"/></svg>
+        </button>`;
+      urlList.appendChild(entry);
+      entry.querySelector('.remove-page-btn').addEventListener('click', () => {
+        entry.remove();
+        if (urlList.children.length === 0) addPageEntryRow(); // always keep at least one
+      });
+    };
+
+    // ----- Stage 2 Logic -----
+    startScrapingBtn.addEventListener('click', async () => {
+      clearError();
+      const rows = [...document.querySelectorAll('.url-entry')];
+      const pages = rows.map(r => ({
+        title: r.querySelector('.page-title-input').value.trim(),
+        url:   r.querySelector('.page-url-input').value.trim()
+      })).filter(p => p.title && p.url);
+
+      if (!pages.length) { showError('Please add at least one valid page title and URL.'); return; }
+
+      goToStage(2);
+      setProgress(15);
+
+      try {
+        const res = await fetch('http://127.0.0.1:5000/scrape', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pages })
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({error: `Server returned status ${res.status}`}));
+          throw new Error(errData.error || 'An unknown server error occurred.');
+        }
+
+        setProgress(60, 'Receiving Project ZIP…', 'Almost there...');
+        currentBlob = await res.blob();
+        
+        const cd = res.headers.get('Content-Disposition') || "";
+        const match = /filename="?([^"]+)"?/i.exec(cd);
+        lastZipName = match ? match[1] : "website_clone.zip";
+        
+        currentZip = await JSZip.loadAsync(currentBlob);
+        setProgress(85);
+
+        buildFileBrowser();
+        await displayFirstHtmlFile();
+        wireDownloadButton(lastZipName);
+        goToStage(3);
+        setProgress(100);
+      } catch (err) {
+        showError('Scraping failed: ' + (err.message || 'Network error'), true);
+      }
+    });
+
+    // ----- Stage 3 Logic -----
+    const buildFileBrowser = () => {
+      fileListUl.innerHTML = '';
+      const filesAndFolders = Object.values(currentZip.files).sort((a,b) => a.name.localeCompare(b.name));
+      filesAndFolders.forEach(file => {
+        const li = document.createElement('li');
+        li.className = 'px-4 py-2 hover:bg-gray-700 cursor-pointer truncate flex items-center gap-2';
+        li.innerHTML = `<span>${file.dir ? '📁' : '📄'}</span> ${file.name}`;
+        li.dataset.path = file.name;
+        if (!file.dir) { 
+          li.addEventListener('click', () => previewFile(file));
+        } else {
+            li.classList.add('text-gray-400');
+        }
+        fileListUl.appendChild(li);
+      });
+    };
+
+    const previewFile = async (file) => {
+      document.querySelectorAll('#file-list li').forEach(el => el.classList.remove('bg-indigo-600'));
+      document.querySelector(`[data-path="${file.name}"]`).classList.add('bg-indigo-600');
+      
+      const ext = file.name.split('.').pop().toLowerCase();
+      const isHtml = ['html', 'htm'].includes(ext);
+      const isText = ['css', 'js', 'txt', 'md', 'json', 'xml', 'svg'].includes(ext);
+      
+      previewHeader.textContent = file.name;
+
+      if (isHtml) {
+        const content = await file.async('string');
+        previewIframe.srcdoc = content;
+        activeHtmlFile = file; // Set as the active file for AI modification
+      } else if (isText) {
+        const content = await file.async('text');
+        const escapedContent = content.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        previewIframe.srcdoc = `<pre style="white-space:pre-wrap;font-family:monospace;padding:1rem;color:#333;">${escapedContent}</pre>`;
+        activeHtmlFile = null;
+      } else {
+         previewIframe.srcdoc = `<div style="padding:2rem;text-align:center;font-family:sans-serif;color:#555;">Binary file or unsupported format. Cannot preview.</div>`;
+         activeHtmlFile = null;
+      }
+    };
+
+    const displayFirstHtmlFile = async () => {
+      const firstHtml = currentZip.file(/\.html?$/i)[0];
+      if (firstHtml) {
+        await previewFile(firstHtml);
+      }
+    };
+    
+    const wireDownloadButton = (filename) => {
+      downloadZipBtn.disabled = false;
+      downloadZipBtn.onclick = () => saveAs(currentBlob, filename);
+    };
+
+    // ------ AI Modify Logic ------
+    modifyBtn.addEventListener('click', async () => {
+      const prompt = promptInput.value.trim();
+      if (!prompt) { showError('Please enter an AI prompt.'); return; }
+      if (!activeHtmlFile) { showError('Please select an HTML file to modify.'); return; }
+      
+      setModifyLoading(true);
+      
+      try {
+        const originalHtml = await activeHtmlFile.async('string');
+        const modifiedHtml = await modifyHtmlWithAI(originalHtml, prompt);
+        
+        // Update the zip file in memory
+        currentZip.file(activeHtmlFile.name, modifiedHtml);
+        currentBlob = await currentZip.generateAsync({ type: 'blob' });
+        
+        // Refresh the preview and download link
+        previewIframe.srcdoc = modifiedHtml;
+        wireDownloadButton(lastZipName); // Re-wire to save the updated blob
+        showError('✅ File modified successfully!', false);
+
+      } catch (err) {
+        showError(err.message || 'An unknown error occurred during AI modification.');
+      } finally {
+        setModifyLoading(false);
+      }
+    });
+
+    async function modifyHtmlWithAI(html, prompt) {
+      // IMPORTANT: Replace with your actual Google AI API key.
+      const apiKey = "YOUR_GOOGLE_AI_API_KEY";
+      if (apiKey === "YOUR_GOOGLE_AI_API_KEY") {
+        throw new Error("Please enter your Google AI API key in the script.");
+      }
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      
+      const systemInstruction = "You are an expert web developer. The user will provide HTML content and a request to modify it. You must return only the full, complete, and valid HTML code for the modified page. Do not include any explanatory text, markdown code blocks, or anything other than the raw HTML source.";
+
+      const reqBody = {
+        contents: [{ role: 'user', parts: [{ text: `User request: "${prompt}"\n\nOriginal HTML:\n---\n${html}` }] }],
+        system_instruction: { role: 'model', parts: [{ text: systemInstruction }] },
+        generationConfig: { response_mime_type: 'text/plain' }
+      };
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reqBody)
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error("AI API Error:", errorData);
+        throw new Error(`AI API Error (${res.status}): ${errorData?.error?.message || 'Failed to get a valid response.'}`);
+      }
+
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      if (!text) throw new Error('AI returned an empty or invalid result.');
+      
+      return text.trim();
+    }
+
+    // --- Event Listeners ---
+    addPageBtn.addEventListener('click', () => addPageEntryRow());
+    retryBtn.addEventListener('click', () => goToStage(1));
+    backBtn.addEventListener('click', () => goToStage(1));
+
+    // --- Initial Setup ---
+    addPageEntryRow('Example', 'https://www.google.com'); // Start with one example row
+    goToStage(1);
+
+  </script>
+</body>
+</html>
